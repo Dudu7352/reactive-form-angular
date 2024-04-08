@@ -1,0 +1,21 @@
+<form (submit)="submitData($event)">
+  @for (input of state; track $index) { @if (input.type.type == "select") {
+  <label [for]="input.inputName">{{ input.inputName }}</label>
+  <select [id]="input.inputName" [formControl]="input.control">
+    <option *ngFor="let option of input.type.options" [value]="option">
+      {{ option }}
+    </option>
+  </select>
+  } @else {
+  <label [for]="input.inputName">{{ input.inputName }}</label>
+  <input
+    [id]="input.inputName"
+    [type]="input.type.type"
+    [formControl]="input.control"
+  />
+  }
+  <br />
+  }
+  
+  <input type="submit" value="Submit" />
+</form>
