@@ -1,6 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { FormControl } from '@angular/forms';
-import { FormStructure, ReactiveFormInputState } from '../type';
+import { FormArray, FormControl } from '@angular/forms';
+import { FormStructure, InputType, ReactiveFormInputState } from '../type';
 import { HttpClient } from '@angular/common/http';
 import { catchError, of } from 'rxjs';
 
@@ -11,36 +11,38 @@ import { catchError, of } from 'rxjs';
 })
 export class ReactiveFormComponent implements OnInit {
   @Input() structure!: FormStructure;
-  state: ReactiveFormInputState[] = [];
+  array: FormArray<FormControl> = new FormArray<FormControl>([]);
 
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    this.state = Object.entries(this.structure).map((values) => {
-      const inputType = values[1];
-      return {
-        inputName: values[0],
-        type: inputType,
-        control:
-          inputType.type === 'number'
-            ? new FormControl<number>(0)
-            : new FormControl(),
-      };
+    Object.entries(this.structure).forEach(([name, inputType]) => {
+      if (inputType.type === 'number') {
+        this.array.push(new FormControl<number>(0));
+      } else {
+        this.array.push(new FormControl<string>(''));
+      }
     });
+  }
+
+  getInputs(): {name: string, inputType: InputType, control: FormControl}[] {
+    return Object.entries(this.structure).map(([name, inputType], id) => ({
+      name,
+      inputType,
+      control: this.array.at(id)
+    }));
   }
 
   submitData(event: SubmitEvent) {
     event.preventDefault();
     let payload: { [key: string]: number | string } = {};
-    this.state.forEach((input) => {
-      payload[input.inputName] = input.control.value;
+    Object.keys(this.structure).forEach((key, id) => {
+      payload[key] = this.array.at(id).value
     });
     console.log(payload);
-    this.http.post('127.0.0.1:1234', payload)
-    .pipe(
-      catchError(_ => of("api does not exist (shocking!)"))
-    )
-    .subscribe(res => console.log(res));
-    
+    this.http
+      .post('127.0.0.1:1234', payload)
+      .pipe(catchError((_) => of('api does not exist (shocking!)')))
+      .subscribe((res) => console.log(res));
   }
 }
